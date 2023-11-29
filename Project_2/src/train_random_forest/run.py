@@ -31,7 +31,8 @@ def delta_date_feature(dates):
     between each date and the most recent date in its column
     """
     date_sanitized = pd.DataFrame(dates).apply(pd.to_datetime)
-    return date_sanitized.apply(lambda d: (d.max() -d).dt.days, axis=0).to_numpy()
+    return date_sanitized.apply(lambda d: (
+        d.max() - d).dt.days, axis=0).to_numpy()
 
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)-15s %(message)s")
@@ -58,7 +59,8 @@ def go(args):
     ######################################
 
     X = pd.read_csv(trainval_local_path)
-    y = X.pop("price")  # this removes the column "price" from X and puts it into y
+    # this removes the column "price" from X and puts it into y
+    y = X.pop("price")
 
     logger.info(f"Minimum price: {y.min()}, Maximum price: {y.max()}")
 
@@ -68,7 +70,8 @@ def go(args):
 
     logger.info("Preparing sklearn pipeline")
 
-    sk_pipe, processed_features = get_inference_pipeline(rf_config, args.max_tfidf_features)
+    sk_pipe, processed_features = get_inference_pipeline(
+        rf_config, args.max_tfidf_features)
 
     # Then fit it to the X_train, y_train data
     logger.info("Fitting")
@@ -133,21 +136,29 @@ def go(args):
     # Upload to W&B the feture importance visualization
     run.log(
         {
-          "feature_importance": wandb.Image(fig_feat_imp),
+            "feature_importance": wandb.Image(fig_feat_imp),
         }
     )
 
 
 def plot_feature_importance(pipe, feat_names):
     # We collect the feature importance for all non-nlp features first
-    feat_imp = pipe["random_forest"].feature_importances_[: len(feat_names)-1]
+    feat_imp = pipe["random_forest"].feature_importances_[
+        : len(feat_names) - 1]
     # For the NLP feature we sum across all the TF-IDF dimensions into a global
     # NLP importance
-    nlp_importance = sum(pipe["random_forest"].feature_importances_[len(feat_names) - 1:])
+    nlp_importance = sum(
+        pipe["random_forest"].feature_importances_[
+            len(feat_names) - 1:])
     feat_imp = np.append(feat_imp, nlp_importance)
     fig_feat_imp, sub_feat_imp = plt.subplots(figsize=(10, 10))
     # idx = np.argsort(feat_imp)[::-1]
-    sub_feat_imp.bar(range(feat_imp.shape[0]), feat_imp, color="r", align="center")
+    sub_feat_imp.bar(
+        range(
+            feat_imp.shape[0]),
+        feat_imp,
+        color="r",
+        align="center")
     _ = sub_feat_imp.set_xticks(range(feat_imp.shape[0]))
     _ = sub_feat_imp.set_xticklabels(np.array(feat_names), rotation=90)
     fig_feat_imp.tight_layout()
@@ -194,7 +205,10 @@ def get_inference_pipeline(rf_config, max_tfidf_features):
     # a review for a long time), and then we create a new feature from it,
     date_imputer = make_pipeline(
         SimpleImputer(strategy='constant', fill_value='2010-01-01'),
-        FunctionTransformer(delta_date_feature, check_inverse=False, validate=False)
+        FunctionTransformer(
+            delta_date_feature,
+            check_inverse=False,
+            validate=False)
     )
 
     # Some minimal NLP for the "name" column
@@ -213,7 +227,9 @@ def get_inference_pipeline(rf_config, max_tfidf_features):
     preprocessor = ColumnTransformer(
         transformers=[
             ("ordinal_cat", ordinal_categorical_preproc, ordinal_categorical),
-            ("non_ordinal_cat", non_ordinal_categorical_preproc, non_ordinal_categorical),
+            ("non_ordinal_cat",
+             non_ordinal_categorical_preproc,
+             non_ordinal_categorical),
             ("impute_zero", zero_imputer, zero_imputed),
             ("transform_date", date_imputer, ["last_review"]),
             ("transform_name", name_tfidf, ["name"])
@@ -221,7 +237,8 @@ def get_inference_pipeline(rf_config, max_tfidf_features):
         remainder="drop",  # This drops the columns that we do not transform
     )
 
-    processed_features = ordinal_categorical + non_ordinal_categorical + zero_imputed + ["last_review", "name"]
+    processed_features = ordinal_categorical + \
+        non_ordinal_categorical + zero_imputed + ["last_review", "name"]
 
     # Create random forest
     random_forest = RandomForestRegressor(**rf_config)
@@ -230,7 +247,8 @@ def get_inference_pipeline(rf_config, max_tfidf_features):
     # Create the inference pipeline. The pipeline must have 2 steps: a step called "preprocessor" applying the
     # ColumnTransformer instance that we saved in the `preprocessor` variable, and a step called "random_forest"
     # with the random forest instance that we just saved in the `random_forest` variable.
-    # HINT: Use the explicit Pipeline constructor so you can assign the names to the steps, do not use make_pipeline
+    # HINT: Use the explicit Pipeline constructor so you can assign the names
+    # to the steps, do not use make_pipeline
     sk_pipe = Pipeline(
         [
             ("preprocessor", preprocessor),

@@ -44,12 +44,14 @@ def test_proper_boundaries(data: pd.DataFrame):
     """
     Test proper longitude and latitude boundaries for properties in and around NYC
     """
-    idx = data['longitude'].between(-74.25, -73.50) & data['latitude'].between(40.5, 41.2)
+    idx = data['longitude'].between(-74.25, -
+                                    73.50) & data['latitude'].between(40.5, 41.2)
 
     assert np.sum(~idx) == 0
 
 
-def test_similar_neigh_distrib(data: pd.DataFrame, ref_data: pd.DataFrame, kl_threshold: float):
+def test_similar_neigh_distrib(
+        data: pd.DataFrame, ref_data: pd.DataFrame, kl_threshold: float):
     """
     Apply a threshold on the KL divergence to detect if the distribution of the new data is
     significantly different than that of the reference dataset
@@ -64,8 +66,14 @@ def test_similar_neigh_distrib(data: pd.DataFrame, ref_data: pd.DataFrame, kl_th
 # Implement here test_row_count and test_price_range   #
 ########################################################
 def test_row_count(data):
+    """
+    Test the size of the data is within the range
+    """
     assert 15000 < data.shape[0] < 1000000
 
 
 def test_price_range(data, min_price, max_price):
+    """
+    Test all the values of the price are with the valid range
+    """
     assert data["price"].between(min_price, max_price).all()
